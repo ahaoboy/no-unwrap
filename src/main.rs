@@ -17,18 +17,36 @@ pub struct UnwrapError {
 
 fn parse(path: &str) -> Vec<Result<()>> {
     let code = std::fs::read_to_string(path).unwrap();
-    let mut p = code.as_str();
-
-    let mut v: Vec<Result<()>> = vec![];
     let mut offset = 0;
-    while let Some(index) = p.find(PAT) {
-        v.push(Err(UnwrapError {
-            src: NamedSource::new(path, code.to_owned()),
-            at: SourceSpan::new((index + offset).into(), PAT.len()),
+    let mut v: Vec<Result<()>> = vec![];
+    while offset < code.len() {
+        if code.as_bytes()[offset] == b'"' {
+            offset += 1;
+            while offset < code.len() && code.as_bytes()[offset] != b'"' {
+                offset += 1;
+            }
         }
-        .into()));
-        p = &p[index + PAT.len()..];
-        offset += index + PAT.len();
+
+        if code[offset..].starts_with("//") {
+            while offset < code.len() && code.as_bytes()[offset] != b'\n' {
+                offset += 1;
+            }
+        }
+        if code[offset..].starts_with("/*") {
+            while offset < code.len() && !code[offset..].starts_with("*/") {
+                offset += 1;
+            }
+        }
+        let p = &code[offset..];
+        if p.starts_with(PAT) {
+            v.push(Err(UnwrapError {
+                src: NamedSource::new(path, code.to_owned()),
+                at: SourceSpan::new((offset).into(), PAT.len()),
+            }
+            .into()));
+            offset += PAT.len()
+        }
+        offset += 1;
     }
 
     v
@@ -40,6 +58,8 @@ fn main() {
         return;
     };
     let errors = parse(&path);
+    // report all .unwrap()
+    /*  report all .unwrap() */
     for e in errors {
         e.report();
     }

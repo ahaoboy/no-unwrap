@@ -11,3 +11,16 @@ authors = ["ahaoboy"]
 [dependencies]
 miette = { version = "7", features = ["fancy"] }
 thiserror = "2"
+
+[profile.release]
+debug = false
+lto = true
+strip = true
+opt-level = "s"
+codegen-units = 1
+
+[profile.bloaty]
+debug = true
+lto = false
+strip = false
+inherits = 'release'
